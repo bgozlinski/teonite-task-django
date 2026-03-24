@@ -15,8 +15,12 @@ services:
       - .env
     environment:
       - POSTGRES_HOST=db
+      - DJANGO_ALLOW_ASYNC_UNSAFE=true
     command: >
-      sh -c "cd src && python manage.py migrate && python manage.py runserver 0.0.0.0:8080"
+      sh -c "cd src &&
+             python manage.py migrate &&
+             python manage.py scrape &&
+             python manage.py runserver 0.0.0.0:8080"
   db:
     container_name: db
     restart: unless-stopped

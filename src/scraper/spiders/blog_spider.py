@@ -6,7 +6,6 @@ from scraper.items import ArticleItem
 class BlogSpider(scrapy.Spider):
     name = "blog"
     start_urls = ["https://netflixtechblog.com/feed"]
-    custom_settings = {"ITEM_PIPELINES": {}}
 
     def parse(self, response: Response):
         sel = Selector(response, type='xml')

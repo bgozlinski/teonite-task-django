@@ -45,6 +45,12 @@ INSTALLED_APPS = [
     "rest_framework",
 ]
 
+EXTERNAL_APPS = [
+    "stats",
+]
+
+INSTALLED_APPS += EXTERNAL_APPS
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

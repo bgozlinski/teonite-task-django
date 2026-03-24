@@ -1,0 +1,51 @@
+name: Docker Build & Test
+
+on:
+  push:
+    branches: [main, feat/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: postgres:17.5
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t teonite-app .
+
+      - name: Run tests
+        run: |
+          docker run --rm \
+            --network host \
+            -e POSTGRES_DB=postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_HOST=localhost \
+            -e POSTGRES_PORT=5432 \
+            -e SECRET_KEY='django-insecure-github-actions-test-key' \
+            -e DEBUG=True \
+            -e DJANGO_ALLOW_ASYNC_UNSAFE=true \
+            teonite-app \
+            sh -c "cd src && python manage.py test stats -v 2"
+
+      - name: Verify docker-compose build
+        run: docker compose build

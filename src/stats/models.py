@@ -19,7 +19,7 @@ class Article(models.Model):
     title = models.CharField(max_length=500)
     url = models.URLField(unique=True)
     content = models.TextField()
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name="articles")
+    authors = models.ManyToManyField(Author, related_name='articles')
 
     def __str__(self):
         return self.title

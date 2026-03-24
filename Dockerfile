@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y
 COPY poetry.lock pyproject.toml /app/
 RUN pip install poetry
 RUN poetry config virtualenvs.create false && poetry install --no-root
+RUN python -m nltk.downloader stopwords
 
 COPY . .
 

@@ -14,41 +14,58 @@ class ArticlePipeline:
     def __init__(self):
         self.stop_words = set(stopwords.words('english'))
 
-    def clean_author_name(self, raw_name: str):
-        new_name = raw_name
-        if raw_name.startswith("By ") or raw_name.startswith("Authors: "):
-            new_name = raw_name.replace("By ", "").replace("Authors: ", "").strip()
-        new_name = new_name.split(", ")[0]
-        if len(new_name.split(" ")) > 3:
-            return "Unknown Author"
+    def clean_author_names(self, name: str):
+        if name.startswith("By ") or name.startswith("Authors: "):
+            name = name.replace("By ", "").replace("Authors: ", "").strip()
 
-        return new_name
+        names  = [n.strip() for n in name.split(", ")]
+
+        valid = [n for n in names if len(n.split(" ")) <= 3]
+
+        return valid if valid else ["Unknown Author"]
+
+    def clean_content(self, content: str):
+        medium_noise = [
+            "Listen Share",
+            "Join Medium for free to get updates from\xa0this\xa0writer.",
+            "Join Medium for free to get updates from this writer.",
+            "Remember me for faster sign in",
+            "Follow",
+        ]
+        for phrase in medium_noise:
+            content = content.replace(phrase, "")
+
+        content = re.sub(r'\s+', ' ', content).strip()
+
+        return content
 
     def process_item(self, item, spider):
-        author_name = self.clean_author_name(item['author_name'])
-        if author_name:
-            author, _ = Author.objects.get_or_create(name=author_name)
+        author_names = self.clean_author_names(item['author_name'])
+        if author_names:
+            clean_text = self.clean_content(item['content'])
+
             article, _ = Article.objects.update_or_create(
                 url=item['url'],
                 defaults={
                     'title': item['title'],
-                    'content': item['content'],
-                    'author': author,
+                    'content': clean_text,
                 }
-
             )
 
-            text = item['content'].lower()
+            article.authors.clear()
+            for name in author_names:
+                author, _ = Author.objects.get_or_create(name=name)
+                article.authors.add(author)
+
+            text = clean_text.lower()
             text = re.sub(r'[^\w\s]', '', text)
             words = text.split()
             words = [w for w in words if w not in self.stop_words and w.isalpha() and len(w) > 2]
-
             word_counts = Counter(words)
 
             for word, count in word_counts.items():
                 WordCount.objects.update_or_create(
-                    word=word,
-                    article=article,
+                    word=word, article=article,
                     defaults={'count': count}
                 )
 
